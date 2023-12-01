@@ -69,5 +69,3 @@ class CrossStrategy(bt.Strategy):
                 # Take Profit hit
                 self.close()
                 self.log('TAKE PROFIT HIT, Price: %.2f' % current_price)
-
-# Esta clase ahora ajusta dinámicamente el stop loss y el take profit basándose en el ATR.
