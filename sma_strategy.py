@@ -30,13 +30,9 @@ class SMAStrategy(bt.Strategy):
     def notify_order(self, order):
         if order.status == order.Completed:
             if order.isbuy():
-                self.log(
-                    "COMPRA (Precio: %.2f, Valor: %.2f" %
-                    (order.executed.price, order.executed.value, order.executed.comm))
+                self.log( "COMPRA (Precio: %.2f, Valor: %.2f" % (order.executed.price, order.executed.value))
             else:
-                self.log(
-                    "VENTA (Precio: %.2f, Valor: %.2f)" %
-                    (order.executed.price, order.executed.value))
+                self.log( "VENTA (Precio: %.2f, Valor: %.2f)" % (order.executed.price, order.executed.value))
             self.bar_executed = len(self)
         elif order.status in [order.Canceled, order.Margin, order.Rejected]:
             self.log("La orden fue cancelada/margen/rechazada")
