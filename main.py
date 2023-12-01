@@ -2,6 +2,7 @@ from __future__ import (absolute_import, division, print_function, unicode_liter
 from cerebro_manager import cerebroManager
 from sma_strategy import SMAStrategy
 from bollinger_rsi_strategy import BollingerRSIStrategy
+from goldencross_strategy import CrossStrategy
 import os.path
 import sys
 
@@ -9,12 +10,15 @@ def print_menu():
     print("Selecciona una estrategia:")
     print("1. SMA Strategy")
     print("2. Bollinger RSI Strategy")
+    print("3. Golden Cross Strategy")
 
 def select_strategy(choice, cerebro):
     if choice == 1:
         cerebro.add_strategy(SMAStrategy)
     elif choice == 2:
         cerebro.add_strategy(BollingerRSIStrategy)
+    elif choice == 3:
+        cerebro.add_strategy(CrossStrategy)
     else:
         print("Opción no válida. Saliendo del programa.")
         sys.exit()
