@@ -1,58 +1,73 @@
 import backtrader as bt
-
+import backtrader.indicators as btind
 
 class CrossStrategy(bt.Strategy):
     params = (
-        ('size_percent', 0.1),  # Porcentaje del capital para el tamaño de la posición
-        ('rsi_period', 14),  # Periodo para el cálculo del RSI
-        ('rsi_upper', 70),  # Umbral superior del RSI para confirmar la tendencia alcista
-        ('rsi_lower', 30),  # Umbral inferior del RSI para confirmar la tendencia bajista
-        ('stop_loss', 0.02),  # Stop loss como un porcentaje del precio de entrada
-        ('take_profit', 0.05),  # Take profit como un porcentaje del precio de entrada
+        ('position_size', 0.1),
+        ('atr_period', 14),      # Periodo para el cálculo del ATR
+        ('atr_multiplier_sl', 0.8),  # Multiplicador para el stop loss basado en ATR
+        ('atr_multiplier_tp', 1.5),  # Multiplicador para el take profit basado en ATR
+        ('rsi_period', 14),
+        ('rsi_upper', 60),
+        ('rsi_lower', 40),
+        ('sma_fast', 50),        # Periodo para la media móvil rápida
+        ('sma_slow', 200)        # Periodo para la media móvil lenta
     )
 
     def log(self, txt, dt=None):
-        ''' Función de logging para la estrategia '''
+        ''' Logging function '''
         dt = dt or self.datas[0].datetime.date(0)
         print('%s, %s' % (dt.isoformat(), txt))
 
     def __init__(self):
-        # Indicadores: media móvil simple de 50 y 200 periodos
-        self.sma50 = bt.indicators.SimpleMovingAverage(self.data.close, period=50)
-        self.sma200 = bt.indicators.SimpleMovingAverage(self.data.close, period=200)
+        # Moving averages
+        self.sma_fast = btind.SimpleMovingAverage(period=self.params.sma_fast)
+        self.sma_slow = btind.SimpleMovingAverage(period=self.params.sma_slow)
 
-        # Indicador RSI
-        self.rsi = bt.indicators.RSI(self.data.close, period=self.params.rsi_period)
+        # RSI
+        self.rsi = btind.RSI(period=self.params.rsi_period)
 
-        # Cruzamiento de medias móviles
-        self.crossover = bt.indicators.CrossOver(self.sma50, self.sma200)
+        # Cross over indicators
+        self.golden_cross = btind.CrossOver(self.sma_fast, self.sma_slow)
+        self.death_cross = btind.CrossOver(self.sma_slow, self.sma_fast)
 
-        self.buy_price = None
-        self.order = None
+        # ATR
+        self.atr = btind.ATR(period=self.params.atr_period)
+
+        # Tracking for dynamic SL and TP
+        self.sl_price = None
+        self.tp_price = None
+
+
 
     def next(self):
-        if self.order:
-            self.cancel(self.order)
+        # Calculating dynamic SL and TP based on ATR
+        atr_value = self.atr[0]
+        current_price = self.data.close[0]
+        self.sl_price = current_price - atr_value * self.params.atr_multiplier_sl
+        self.tp_price = current_price + atr_value * self.params.atr_multiplier_tp
 
-        position_size = self.broker.getvalue() * self.params.size_percent
+        if not self.position:
+            if self.golden_cross > 0 and self.rsi < self.params.rsi_upper:
+                # Buy signal - Golden Cross confirmed with RSI
+                size = self.broker.getvalue() * self.params.position_size / self.data.close
+                self.buy(size=size)
+                self.log('BUY EXECUTED, Price: %.2f, Size: %.2f' % (current_price, size))
 
-        if self.crossover > 0 :
-            if self.position.size == 0:
-                self.buy_price = self.data.close[0]
-                self.order = self.buy(size=position_size)
-                self.log('BUY EXECUTED, Size: %s, RSI: %s, Price: %s' % (position_size, self.rsi[0], self.buy_price))
+        elif self.death_cross < 0 and self.rsi > self.params.rsi_lower:
+            # Sell signal - Death Cross confirmed with RSI
+            self.close()
+            self.log('SELL EXECUTED, Price: %.2f' % current_price)
 
-        elif self.crossover < 0 :
-            if self.position.size > 0:
-                self.order = self.sell(size=position_size)
-                self.log('SELL EXECUTED, Size: %s, RSI: %s, Price: %s' % (position_size, self.rsi[0], self.data.close[0]))
+        # Check for SL and TP conditions
+        if self.position:
+            if current_price <= self.sl_price:
+                # Stop Loss hit
+                self.close()
+                self.log('STOP LOSS HIT, Price: %.2f' % current_price)
+            elif current_price >= self.tp_price:
+                # Take Profit hit
+                self.close()
+                self.log('TAKE PROFIT HIT, Price: %.2f' % current_price)
 
-        if self.position.size > 0:
-            if self.data.close[0] >= self.buy_price * (1 + self.params.take_profit):
-                self.sell(size=self.position.size)
-                self.log('SELL - TAKE PROFIT EXECUTED, Price: %s' % (self.data.close[0]))
-
-            elif self.data.close[0] <= self.buy_price * (1 - self.params.stop_loss):
-                self.sell(size=self.position.size)
-                self.log('STOP LOSS EXECUTED, Price: %s' % (self.data.close[0]))
-
+# Esta clase ahora ajusta dinámicamente el stop loss y el take profit basándose en el ATR.
