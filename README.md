@@ -1,10 +1,8 @@
 
 # Bot de Trading Algorítmico
-### DIAPOSITIVAS DE LA PRESENTACION
-https://docs.google.com/presentation/d/1t516_lRc3jtZYjWEjOtsbPcAk0pZ5x0QQp_5Z_pfQ5k/edit?usp=sharing
-
-
 Este proyecto es un bot de trading algorítmico desarrollado en Python, resultado de una optativa donde aprendimos a construir bots para operar en mercados financieros utilizando diversas estrategias de trading y arbitraje.
+#### DIAPOSITIVAS DE LA PRESENTACION
+https://docs.google.com/presentation/d/1t516_lRc3jtZYjWEjOtsbPcAk0pZ5x0QQp_5Z_pfQ5k/edit?usp=sharing
 
 ## Estrategias implementadas
 
